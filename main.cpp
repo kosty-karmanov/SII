@@ -20,17 +20,35 @@ struct node3 {
     int x, y, type, id;
 };
 
-struct node4 {
+struct order {
     bool type, taken;
     int cargo_id, punkt_id, shelf_id;
 };
 
-int n = 10, m = 10, seconds_ = 0, ticks_ = 0;
+int n = 40, m = 40, seconds_ = 0, ticks_ = 0;
 const int N = 1e3;
 vector<vector<vector<int>>> banned_time(
     n, vector<vector<int>>(m, vector<int>(N, -1)));
 bool simulation_working = false;
-deque<node4> orders;
+deque<order> orders;
+
+struct button {
+    string text;
+    int x, y, width, height, action, font_size;
+
+    button(string s1, int x1, int y1, int width1, int height1, int action1,
+           int size) {
+        text = s1;
+        x = x1;
+        y = y1;
+        width = width1;
+        height = height1;
+        action = action1;
+        font_size = size;
+    }
+};
+
+vector<button> buttons;
 
 
 vector<pair<int, int>> bfs(vector<vector<int>>& a, int x1, int y1, int x2,
@@ -41,11 +59,12 @@ vector<pair<int, int>> bfs(vector<vector<int>>& a, int x1, int y1, int x2,
         n, vector<vector<pair<int, int>>>(m, vector<pair<int, int>>(N)));
     deque<node2> d;
     dp[x1][y1][time_start] = true;
-    vector<pair<int, int>> move = {{-1, 0},
+    vector<pair<int, int>> move = {{0, 0},
+                                   {-1, 0},
                                    {1, 0},
                                    {0, -1},
                                    {0, 1},
-                                   {0, 0}};
+    };
     bool found = false;
     d.push_back({x1, y1, time_start});
     while (d.size()) {
@@ -60,18 +79,17 @@ vector<pair<int, int>> bfs(vector<vector<int>>& a, int x1, int y1, int x2,
         for (auto de : move) {
             int xn = x + de.first, yn = y + de.second;
             if (xn > -1 and xn < n and yn > -1 and yn < m) {
-                if ((a[xn][yn] == 3 or a[xn][yn] == 5 or a[xn][yn] == 2) and (
+                if ((a[xn][yn] == 3 or a[xn][yn] == 5 or a[xn][yn] == 2 or a[xn]
+                     [yn] == 0) and (
                         xn != x2 or yn != y2))
                     continue;
                 if (banned_time[xn][yn][time_now + 1] != -1)
                     continue;
                 if (dp[xn][yn][time_now + 1])
                     continue;
-                if (a[xn][yn] == 0)
-                    continue;
                 if (banned_time[xn][yn][time_now] == banned_time[x][y][
-                        time_now + 1] and (
-                        banned_time[x][y][time_now + 1] != -1))
+                        time_now + 1] and
+                    banned_time[x][y][time_now + 1] != -1)
                     continue;
 
                 dp[xn][yn][time_now + 1] = true;
@@ -161,7 +179,8 @@ unordered_map<string, Color> colors = {
 
 vector<Color> robot_colors = {Color(219, 68, 64), Color(248, 222, 84),
                               Color(194, 60, 169), Color(16, 216, 227),
-                              Color(79, 212, 71)};
+                              Color(79, 212, 71), Color(135, 204, 46),
+                              Color(232, 4, 127), Color(60, 15, 240)};
 
 int GetEpochTime() {
     const auto p1 = std::chrono::system_clock::now();
@@ -179,7 +198,7 @@ private:
 public:
     Cargo() = default;
 
-    void Create(int id, string name, bool priority) {
+    void create(int id, string name, bool priority) {
         id_ = id;
         name_ = name;
         priority_ = priority;
@@ -187,60 +206,60 @@ public:
         shelf_id_ = 0;
     }
 
-    int GetId() const {
+    int getId() const {
         return id_;
     }
 
-    bool OnShelf() const {
+    bool onShelf() const {
         return on_shelf_;
     }
 
-    bool OnRobot() const {
+    bool onRobot() const {
         return on_robot_;
     }
 
-    bool OnPcikUp() const {
+    bool onPcikUp() const {
         return on_pickup_;
     }
 
-    int GetShelfId() const {
+    int getShelfId() const {
         return shelf_id_;
     }
 
-    int GetRobotId() const {
+    int getRobotId() const {
         return robot_id_;
     }
 
-    int GetPickUpId() const {
+    int getPickUpId() const {
         return pickup_id_;
     }
 
-    int ToRemove() const {
+    int toRemove() const {
         return to_remove_;
     }
 
-    void PutOnPickUp(int id) {
+    void putOnPickUp(int id) {
         on_shelf_ = false;
         on_robot_ = false;
         on_pickup_ = true;
         pickup_id_ = id;
     }
 
-    void PutOnShelf(int id) {
+    void putOnShelf(int id) {
         on_shelf_ = true;
         on_robot_ = false;
         on_pickup_ = false;
         shelf_id_ = id;
     }
 
-    void PutOnRobot(int id) {
+    void putOnRobot(int id) {
         on_shelf_ = false;
         on_robot_ = true;
         on_pickup_ = false;
         robot_id_ = id;
     }
 
-    string GetName() const {
+    string getName() const {
         return name_;
     }
 };
@@ -255,7 +274,7 @@ private:
 public:
     Shelf() = default;
 
-    void Create(int id, int size, int x, int y) {
+    void create(int id, int size, int x, int y) {
         id_ = id;
         x_ = x;
         y_ = y;
@@ -266,34 +285,34 @@ public:
         shelf_.resize(size, -1);
     }
 
-    int GetSize() const {
+    int getSize() const {
         return size_;
     }
 
-    int GetFrSpace() const {
+    int getFrSpace() const {
         return free_space_;
     }
 
-    int GetId() const {
+    int getId() const {
         return id_;
     }
 
-    pair<int, int> GetPos() {
+    pair<int, int> getPos() {
         return {x_, y_};
     }
 
-    vector<int> GetCargos() {
+    vector<int> getCargos() {
         return shelf_;
     }
 
-    void ChangeFreeSize(int d) {
+    void changeFreeSize(int d) {
         free_space_ += d;
     }
 
-    int PushCargo(int id) {
+    int pushCargo(int id) {
         for (int i = 0; i < size_; ++i) {
             if (shelf_[i] == -1) {
-                cargos[id].PutOnShelf(id_);
+                cargos[id].putOnShelf(id_);
                 shelf_[i] = id;
                 return i;
             }
@@ -301,7 +320,7 @@ public:
         return -1;
     }
 
-    Cargo PopCargo(int i) {
+    Cargo popCargo(int i) {
         Cargo temp = cargos[shelf_[i]];
         shelf_[i] = -1;
         return temp;
@@ -316,30 +335,30 @@ private:
 public:
     PickUp() = default;
 
-    void Create(int id, int x, int y) {
+    void create(int id, int x, int y) {
         cargos_.clear();
         id_ = id;
         x_ = x;
         y_ = y;
     }
 
-    void AddCargo(int id) {
+    void addCargo(int id) {
         cargos_.insert(id);
     }
 
-    void PopCargo(int id) {
+    void popCargo(int id) {
         cargos_.erase(id);
     }
 
-    int GetId() const {
+    int getId() const {
         return id_;
     }
 
-    set<int> GetCargos() {
+    set<int> getCargos() {
         return cargos_;
     }
 
-    pair<int, int> GetPos() {
+    pair<int, int> getPos() {
         return {x_, y_};
     }
 };
@@ -358,7 +377,7 @@ private:
 public:
     Robot() = default;
 
-    void Create(int x, int y, int id, int dock_id) {
+    void create(int x, int y, int id, int dock_id) {
         x_ = x;
         y_ = y;
         id_ = id;
@@ -369,11 +388,11 @@ public:
         cargo_id_ = -1;
     }
 
-    void TakeCargo(int i) {
+    void takeCargo(int i) {
         cargo_id_ = i;
     }
 
-    pair<int, int> GetPos() {
+    pair<int, int> getPos() {
         return {x_, y_};
     }
 
@@ -381,48 +400,52 @@ public:
         return id_;
     }
 
-    void SetPath(vector<node3> path) {
+    int getCurPath() const {
+        return cur_path_;
+    }
+
+    void setPath(vector<node3> path) {
         path_ = path;
         busy_ = true;
         cur_path_ = 0;
         // cout<<id_<<" received new path!\n"<<path_.size()<<"\n";
     }
 
-    int GetCargoId() const {
+    int getCargoId() const {
         return cargo_id_;
     }
 
-    int GetDockId() const {
+    int getDockId() const {
         return dock_id_;
     }
 
-    int PopCargo() {
+    int popCargo() {
         int temp = cargo_id_;
         cargo_id_ = -1;
         return temp;
     }
 
-    bool GetStatus() const {
+    bool getStatus() const {
         return busy_;
     }
 
-    vector<node3> GetPath() {
+    vector<node3> getPath() {
         return path_;
     }
 
-    int GetOrderId() const {
+    int getOrderId() const {
         return order_id_;
     }
 
-    void SetOrderId(int id) {
+    void setOrderId(int id) {
         order_id_ = id;
     }
 
-    int GetTask() const {
+    int getTask() const {
         return task_;
     }
 
-    void SetTask(int val) {
+    void setTask(int val) {
         task_ = val;
     }
 
@@ -442,7 +465,7 @@ public:
         cur_path_ = 0;
     }
 
-    void Iteration() {
+    void iteration() {
         // if (id_ == 4) {
         //     cout<<task_<<" " << path_.size() <<" " <<busy_<<"\n";
         // }
@@ -452,7 +475,7 @@ public:
                 return;
             }
             if (task_ == 1 && path_[cur_path_].type == 4) {
-                pickups[path_[cur_path_].id].PopCargo(
+                pickups[path_[cur_path_].id].popCargo(
                     orders[order_id_].cargo_id);
                 cargo_id_ = orders[order_id_].cargo_id;
                 task_ = 2;
@@ -460,7 +483,7 @@ public:
 
             if (task_ == 2 && path_[cur_path_].type == 3) {
                 // cout<<id_<<" finished task!" <<"\n";
-                shelves[path_[cur_path_].id].PushCargo(cargo_id_);
+                shelves[path_[cur_path_].id].pushCargo(cargo_id_);
                 cargo_id_ = -1;
                 task_ = -1;
                 busy_ = false;
@@ -468,15 +491,15 @@ public:
 
             if (task_ == 3 && (path_[cur_path_].type == 3 || path_[cur_path_].
                                type == 5)) {
-                shelves[path_[cur_path_].id].PopCargo(
+                shelves[path_[cur_path_].id].popCargo(
                     orders[order_id_].cargo_id);
-                shelves[path_[cur_path_].id].ChangeFreeSize(1);
+                shelves[path_[cur_path_].id].changeFreeSize(1);
                 cargo_id_ = orders[order_id_].cargo_id;
                 task_ = 4;
             }
 
             if (task_ == 4 && path_[cur_path_].type == 4) {
-                pickups[path_[cur_path_].id].AddCargo(cargo_id_);
+                pickups[path_[cur_path_].id].addCargo(cargo_id_);
                 cargo_id_ = -1;
                 task_ = -1;
                 busy_ = false;
@@ -499,7 +522,7 @@ private:
 public:
     Dock() = default;
 
-    void Create(int x, int y, int size, int id) {
+    void create(int x, int y, int size, int id) {
         x_ = x;
         y_ = y;
         size_ = size;
@@ -511,32 +534,32 @@ public:
             while (robots.find(i) != robots.end()) {
                 i++;
             }
-            robots[i].Create(x_, y_, i, id_);
+            robots[i].create(x_, y_, i, id_);
             robots_id.push_back(i);
         }
     }
 
-    int GetFreeRobots() const {
+    int getFreeRobots() const {
         return cur_robots_;
     }
 
-    vector<int> GetRobotsId() {
+    vector<int> getRobotsId() {
         return robots_id;
     }
 
-    int GetId() const {
+    int getId() const {
         return id_;
     }
 
-    int GetSize() const {
+    int getSize() const {
         return size_;
     }
 
-    pair<int, int> GetPos() {
+    pair<int, int> getPos() {
         return {x_, y_};
     }
 
-    void DeleteRobots() const {
+    void deleteRobots() const {
         for (int id : robots_id) {
             robots.erase(id);
         }
@@ -554,7 +577,7 @@ private:
 public:
     Point() = default;
 
-    void BecomeRoad() {
+    void becomeRoad() {
         is_none_ = false;
         if (is_shelf_) {
             shelves.erase(shelf_id_);
@@ -562,7 +585,7 @@ public:
         }
         if (is_dock_) {
             is_dock_ = false;
-            docks[dock_id_].DeleteRobots();
+            docks[dock_id_].deleteRobots();
             docks.erase(dock_id_);
             dock_id_ = 0;
         }
@@ -574,12 +597,12 @@ public:
         is_road_ = true;
     }
 
-    void BecomeShelf(int size) {
+    void becomeShelf(int size) {
         is_none_ = false;
         is_road_ = false;
         if (is_dock_) {
             is_dock_ = false;
-            docks[dock_id_].DeleteRobots();
+            docks[dock_id_].deleteRobots();
             docks.erase(dock_id_);
             dock_id_ = 0;
         }
@@ -595,14 +618,14 @@ public:
         is_shelf_ = true;
         shelf_id_ = i;
         shelves[i] = Shelf();
-        shelves[i].Create(i, size, x_, y_);
+        shelves[i].create(i, size, x_, y_);
     }
 
-    void BecomeNone() {
+    void becomeNone() {
         is_road_ = false;
         if (is_dock_) {
             is_dock_ = false;
-            docks[dock_id_].DeleteRobots();
+            docks[dock_id_].deleteRobots();
             docks.erase(dock_id_);
             dock_id_ = 0;
         }
@@ -619,7 +642,7 @@ public:
         is_none_ = true;
     }
 
-    void BecomeDock(int size) {
+    void becomeDock(int size) {
         is_none_ = false;
         is_road_ = false;
         is_dock_ = true;
@@ -639,15 +662,15 @@ public:
         }
         dock_id_ = i;
         docks[i] = Dock();
-        docks[i].Create(x_, y_, size, i);
+        docks[i].create(x_, y_, size, i);
     }
 
-    void BecomePickUp() {
+    void becomePickUp() {
         is_road_ = false;
         is_none_ = false;
         if (is_dock_) {
             is_dock_ = false;
-            docks[dock_id_].DeleteRobots();
+            docks[dock_id_].deleteRobots();
             docks.erase(dock_id_);
             dock_id_ = 0;
         }
@@ -663,43 +686,43 @@ public:
         }
         pickup_id = i;
         pickups[i] = PickUp();
-        pickups[i].Create(i, x_, y_);
+        pickups[i].create(i, x_, y_);
     }
 
-    void Create(int x, int y) {
+    void create(int x, int y) {
         x_ = x;
         y_ = y;
     }
 
-    bool IsRoad() const {
+    bool isRoad() const {
         return is_road_;
     }
 
-    bool IsShelf() const {
+    bool isShelf() const {
         return is_shelf_;
     }
 
-    bool IsNone() const {
+    bool isNone() const {
         return is_none_;
     }
 
-    bool IsDock() const {
+    bool isDock() const {
         return is_dock_;
     }
 
-    bool IsPickUp() const {
+    bool isPickUp() const {
         return is_pickup_;
     }
 
-    int GetPickUpId() const {
+    int getPickUpId() const {
         return pickup_id;
     }
 
-    int GetDockId() const {
+    int getDockId() const {
         return dock_id_;
     }
 
-    int GetShelfId() const {
+    int getShelfId() const {
         return shelf_id_;
     }
 };
@@ -709,7 +732,7 @@ public:
 RenderWindow window(VideoMode(2560, 1440), "Simulation");
 RenderWindow help_window(VideoMode(640, 480), "Info");
 vector<vector<Point>> field;
-int square_size;
+int square_size, current_illumination = -1;
 bool is_locked_buttons = false, keyboard_locked = false, is_terminal_selected =
          false, term_status = true;
 pair<int, int> selected_point = {-1, -1};
@@ -723,6 +746,73 @@ map<string, Texture> sprites;
 
 // -----------------------------------------------------------------------------
 
+void CreateButtons() {
+    buttons = {
+        button("Load", n * square_size + 300, 50, 80, 50, 1, 30),
+        button("Save", n * square_size + 700, 50, 80, 50, 2, 30),
+    };
+}
+
+void LoadField() {
+    ifstream input_file("C:/Users/kosty/CLionProjects/untitled1/field.txt");
+    if (input_file.is_open()) {
+        int n1, m1;
+        input_file >> n1 >> m1;
+        if (n1 != n || m1 != m) {
+            cout << "Bad field size: " << n1 << " " << m1 << ". Current: " << n
+                << " " << m << '\n';
+            return;
+        }
+        banned_time.clear();
+        banned_time.resize(n, vector<vector<int>>(m, vector<int>(N, -1)));
+        orders.clear();
+        simulation_working = false;
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < m; ++j) {
+                field[i][j].becomeNone();
+            }
+        }
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < m; ++j) {
+                int type;
+                input_file >> type;
+                if (type == 1) {
+                    field[i][j].becomeRoad();
+                } else if (type == 2) {
+                    field[i][j].becomeDock(1);
+                } else if (type == 3) {
+                    field[i][j].becomeShelf(1);
+                } else if (type == 4) {
+                    field[i][j].becomePickUp();
+                }
+            }
+        }
+    }
+}
+
+void SaveField() {
+    ofstream output_file("C:/Users/kosty/CLionProjects/untitled1/field.txt");
+    if (output_file.is_open()) {
+        output_file << n << " " << m << "\n";
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < m; ++j) {
+                if (field[i][j].isRoad()) {
+                    output_file << "1 ";
+                } else if (field[i][j].isDock()) {
+                    output_file << "2 ";
+                } else if (field[i][j].isShelf()) {
+                    output_file << "3 ";
+                } else if (field[i][j].isPickUp()) {
+                    output_file << "4 ";
+                } else {
+                    output_file << "0 ";
+                }
+            }
+            output_file << "\n";
+        }
+    }
+}
+
 int Pos2Num(int x, int y) {
     return x * m + y;
 }
@@ -731,40 +821,21 @@ pair<int, int> Num2Pos(int num) {
     return {num / m, num % m};
 }
 
-void BuildGraph() {
-    graph.clear();
-    graph.resize(n * m);
-    for (int i = 1; i < n; ++i) {
-        for (int j = 1; j < m; ++j) {
-            if (field[i][j].IsRoad()) {
-                if (field[i - 1][j].IsRoad()) {
-                    graph[Pos2Num(i, j)].push_back(Pos2Num(i - 1, j));
-                    graph[Pos2Num(i - 1, j)].push_back(Pos2Num(i, j));
-                }
-                if (field[i][j - 1].IsRoad()) {
-                    graph[Pos2Num(i, j - 1)].push_back(Pos2Num(i, j));
-                    graph[Pos2Num(i, j)].push_back(Pos2Num(i, j - 1));
-                }
-            }
-        }
-    }
-}
-
 vector<vector<int>> RebuildMatrix() {
     vector<vector<int>> ans(n, vector<int>(m));
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < m; ++j) {
-            if (field[i][j].IsRoad()) {
+            if (field[i][j].isRoad()) {
                 ans[i][j] = 1;
-            } else if (field[i][j].IsDock()) {
+            } else if (field[i][j].isDock()) {
                 ans[i][j] = 2;
-            } else if (field[i][j].IsShelf()) {
+            } else if (field[i][j].isShelf()) {
                 if (shelves[field[i][j].
-                        GetShelfId()].GetFrSpace() > 0)
+                        getShelfId()].getFrSpace() > 0)
                     ans[i][j] = 3;
                 else
                     ans[i][j] = 5;
-            } else if (field[i][j].IsPickUp()) {
+            } else if (field[i][j].isPickUp()) {
                 ans[i][j] = 4;
             }
         }
@@ -776,10 +847,10 @@ vector<node3> GetFullPath(int robot_id, int pickup_id, int shelf_id) {
     vector<node3> ans;
     vector<vector<int>> a = RebuildMatrix();
     Robot r = robots[robot_id];
-    pair<int, int> robot_pos = r.GetPos();
+    pair<int, int> robot_pos = r.getPos();
     if (shelf_id == -1) {
         PickUp p = pickups[pickup_id];
-        pair<int, int> pickup_pos = p.GetPos();
+        pair<int, int> pickup_pos = p.getPos();
         vector<pair<int, int>> path = bfs(a, robot_pos.first, robot_pos.second,
                                           pickup_pos.first, pickup_pos.second,
                                           n, m, ticks_, robot_id + 1);
@@ -804,11 +875,11 @@ vector<node3> GetFullPath(int robot_id, int pickup_id, int shelf_id) {
             ans.push_back({elem2.first, elem2.second,
                            -1});
         }
-        ans[ans.size() - 1].id = field[pos.first][pos.second].GetShelfId();
+        ans[ans.size() - 1].id = field[pos.first][pos.second].getShelfId();
         ans[ans.size() - 1].type = 3;
     } else {
         Shelf s = shelves[shelf_id];
-        pair<int, int> shelf_pos = s.GetPos();
+        pair<int, int> shelf_pos = s.getPos();
         vector<pair<int, int>> path = bfs(a, robot_pos.first, robot_pos.second,
                                           shelf_pos.first, shelf_pos.second, n,
                                           m, ticks_, robot_id + 1);
@@ -822,7 +893,7 @@ vector<node3> GetFullPath(int robot_id, int pickup_id, int shelf_id) {
         ans[ans.size() - 1].id = shelf_id;
         ans[ans.size() - 1].type = 3;
         PickUp p = pickups[pickup_id];
-        pair<int, int> pickup_pos = p.GetPos();
+        pair<int, int> pickup_pos = p.getPos();
         path = bfs(a, shelf_pos.first, shelf_pos.second, pickup_pos.first,
                    pickup_pos.second, n, m, ticks_ + ans.size(), robot_id + 1);
         if (path.empty()) {
@@ -840,16 +911,16 @@ vector<node3> GetFullPath(int robot_id, int pickup_id, int shelf_id) {
 
 vector<int> Get4Near(int x, int y) {
     vector<int> ans;
-    if (y - 1 >= 0 && field[x][y - 1].IsRoad()) {
+    if (y - 1 >= 0 && field[x][y - 1].isRoad()) {
         ans.push_back(Pos2Num(x, y - 1));
     }
-    if (y + 1 < m && field[x][y + 1].IsRoad()) {
+    if (y + 1 < m && field[x][y + 1].isRoad()) {
         ans.push_back(Pos2Num(x, y + 1));
     }
-    if (x - 1 >= 0 && field[x - 1][y].IsRoad()) {
+    if (x - 1 >= 0 && field[x - 1][y].isRoad()) {
         ans.push_back(Pos2Num(x - 1, y));
     }
-    if (x + 1 < n && field[x + 1][y].IsRoad()) {
+    if (x + 1 < n && field[x + 1][y].isRoad()) {
         ans.push_back(Pos2Num(x + 1, y));
     }
     return ans;
@@ -860,15 +931,15 @@ int GetNearestRobot(int x, int y) {
     int id = -1;
     vector<pair<int, int>> path;
     for (auto r : robots) {
-        if (!r.second.GetStatus()) {
-            int start = Pos2Num(r.second.GetPos().first,
-                                r.second.GetPos().second);
+        if (!r.second.getStatus()) {
+            int start = Pos2Num(r.second.getPos().first,
+                                r.second.getPos().second);
             deque<pair<int, int>> dq;
             vector<bool> used(n * m);
             vector<int> p(n * m);
             p[start] = -1;
-            vector<int> poss = Get4Near(r.second.GetPos().first,
-                                        r.second.GetPos().second);
+            vector<int> poss = Get4Near(r.second.getPos().first,
+                                        r.second.getPos().second);
             for (int& pos : poss) {
                 dq.emplace_back(pos, 0);
                 p[pos] = start;
@@ -912,10 +983,10 @@ int GetNearestRobotV2(int x, int y) {
     int ans = 1e9, id = -1;
     vector<vector<int>> a = RebuildMatrix();
     for (auto r : robots) {
-        if (r.second.GetStatus()) {
+        if (r.second.getStatus()) {
             continue;
         }
-        pair<int, int> pos = r.second.GetPos();
+        pair<int, int> pos = r.second.getPos();
         int ln = bfs(a, pos.first, pos.second, x, y, n, m, ticks_, r.first + 1).
             size();
         if (ln == 0) {
@@ -936,7 +1007,7 @@ int GetNearestRobotV3(bool type, int pickup_id, int shelf_id) {
     int mn = 1e9;
     int id = -1;
     for (auto r : robots) {
-        if (r.second.GetStatus() && r.second.GetTask() != -1) {
+        if (r.second.getStatus() && r.second.getTask() != -1) {
             continue;
         }
         int sz = GetFullPath(r.second.getId(), pickup_id, shelf_id).size();
@@ -950,24 +1021,26 @@ int GetNearestRobotV3(bool type, int pickup_id, int shelf_id) {
 
 void RobotsIteration() {
     for (auto& r : robots) {
-        r.second.Iteration();
+        r.second.iteration();
     }
     int cnt = 0;
-    for (node4& order : orders) {
-        if (order.taken) {
+    for (order& order_ : orders) {
+        if (order_.taken) {
+            cnt++;
             continue;
         }
-        int id = GetNearestRobotV3(order.type, order.punkt_id, order.shelf_id);
+        int id = GetNearestRobotV3(order_.type, order_.punkt_id,
+                                   order_.shelf_id);
         if (id != -1) {
-            order.taken = true;
+            order_.taken = true;
             vector<node3> path =
-                GetFullPath(id, order.punkt_id, order.shelf_id);
-            robots[id].SetPath(path);
-            robots[id].SetOrderId(cnt);
-            if (order.type) {
-                robots[id].SetTask(1);
+                GetFullPath(id, order_.punkt_id, order_.shelf_id);
+            robots[id].setPath(path);
+            robots[id].setOrderId(cnt);
+            if (order_.type) {
+                robots[id].setTask(1);
                 int shelf_id = path[path.size() - 1].id;
-                shelves[shelf_id].ChangeFreeSize(-1);
+                shelves[shelf_id].changeFreeSize(-1);
                 int cur_ticks = ticks_;
                 for (auto i : path) {
                     banned_time[i.x][i.y][cur_ticks++] = id + 1;
@@ -976,7 +1049,7 @@ void RobotsIteration() {
                     // }
                 }
             } else {
-                robots[id].SetTask(3);
+                robots[id].setTask(3);
                 int cur_ticks = ticks_;
                 for (auto i : path) {
                     banned_time[i.x][i.y][cur_ticks++] = id + 1;
@@ -990,9 +1063,9 @@ void RobotsIteration() {
     }
     vector<vector<int>> a = RebuildMatrix();
     for (auto& r : robots) {
-        if (!r.second.GetStatus() || r.second.GetTask() == 228) {
-            pair<int, int> pos = r.second.GetPos();
-            pair<int, int> dpos = docks[r.second.GetDockId()].GetPos();
+        if (!r.second.getStatus() || r.second.getTask() == 228) {
+            pair<int, int> pos = r.second.getPos();
+            pair<int, int> dpos = docks[r.second.getDockId()].getPos();
             if (pos.first == dpos.first && pos.second == dpos.second) {
                 continue;
             }
@@ -1000,20 +1073,21 @@ void RobotsIteration() {
                                               dpos.first, dpos.second, n, m,
                                               ticks_, r.first + 1);
             if (path.empty()) {
-                r.second.SetPath({});
-                r.second.SetTask(228);
+                r.second.setPath({});
+                r.second.setTask(228);
                 banned_time[pos.first][pos.second][ticks_] = r.first + 1;
                 continue;
             }
-            r.second.SetTask(-1);
+            r.second.setTask(-1);
             int cur_ticks = ticks_;
             vector<node3> ans;
             for (auto elem : path) {
                 ans.push_back({elem.first, elem.second,
                                a[elem.first][elem.second]});
+                ans[ans.size() - 1].type = -1;
                 banned_time[elem.first][elem.second][cur_ticks++] = r.first + 1;
             }
-            r.second.SetPath(ans);
+            r.second.setPath(ans);
         }
     }
 }
@@ -1031,7 +1105,7 @@ bool CanPressButton(int code) {
     return true;
 }
 
-void Type(RenderWindow& window2, int x, int y, String s,
+void Type(RenderWindow& window2, float x, float y, String s,
           Color col = Color::White, int size = 24) {
     Text text;
     Font font;
@@ -1068,7 +1142,7 @@ pair<int, int> GetTextSize(string s, int size = 24) {
     return {text.getLocalBounds().height, text.getLocalBounds().width};
 }
 
-void DrawRect(RenderWindow& window, int x, int y, int h, Color col) {
+void DrawRect(RenderWindow& window, float x, float y, float h, Color col) {
     CircleShape circle(h / 2);
     circle.setFillColor(col);
     circle.setPosition(x, y);
@@ -1167,10 +1241,10 @@ int CreateCargo(string name, int pickup_id, bool priority) {
         i++;
     }
     Cargo c;
-    c.Create(i, name, priority);
+    c.create(i, name, priority);
     cargos[i] = c;
-    cargos[i].PutOnPickUp(pickup_id);
-    pickups[pickup_id].AddCargo(i);
+    cargos[i].putOnPickUp(pickup_id);
+    pickups[pickup_id].addCargo(i);
     return i;
 }
 
@@ -1220,20 +1294,34 @@ void ProcessCommand(string command) {
             LogError("No pickups!");
             return;
         }
-        if (splt.size() != 4) {
-            LogError("Invalid command!");
+        if (splt.size() == 2) {
+            string command = splt[1];
+            if (command == "test") {
+                int name = 0;
+                for (int i = 0; i < pickups.size(); ++i) {
+                    for (int j = 0; j < 1; ++j) {
+                        int cargo_id = CreateCargo(to_string(name), name, 0);
+                        orders.push_back({true, false, cargo_id, i, -1});
+                        name++;
+                    }
+                }
+                LogMsg("Done");
+            }
+            return;
+        }
+        if (splt.size() != 3) {
+            LogError("Invalid command! order {id} {name}");
             return;
         }
         int id = stoi(splt[1]);
         string name = splt[2];
-        int priority = stoi(splt[3]);
         for (auto& c : cargos) {
-            if (c.second.GetName() == name) {
+            if (c.second.getName() == name) {
                 LogError("Name is already existing");
                 return;
             }
         }
-        int cargo_id = CreateCargo(name, id, priority);
+        int cargo_id = CreateCargo(name, id, 0);
         if (cargo_id == -1) {
             LogError("Invalid pickup ID!");
             return;
@@ -1242,15 +1330,15 @@ void ProcessCommand(string command) {
         LogMsg("The order has been created");
     } else if (splt[0] == "receive") {
         if (splt.size() != 3) {
-            LogError("Invalid command!");
+            LogError("Invalid command! receive {name} {id}");
             return;
         }
         string name = splt[1];
         int id = stoi(splt[2]);
         for (auto& c : cargos) {
-            if (c.second.GetName() == name) {
+            if (c.second.getName() == name) {
                 orders.push_back({false, false, c.first, id,
-                                  c.second.GetShelfId()});
+                                  c.second.getShelfId()});
                 LogMsg("The order is being delivered");
                 return;
             }
@@ -1268,7 +1356,7 @@ void ProcessCommand(string command) {
             LogError("Invalid robot ID!");
             return;
         }
-        pair<int, int> pos = robots[id].GetPos();
+        pair<int, int> pos = robots[id].getPos();
         vector<vector<int>> a = RebuildMatrix();
         vector<pair<int, int>> path = bfs(a, pos.first, pos.second, x, y, n, m,
                                           ticks_, id + 1);
@@ -1279,7 +1367,7 @@ void ProcessCommand(string command) {
                            a[elem.first][elem.second]});
             banned_time[elem.first][elem.second][cur_ticks++] = id + 1;
         }
-        robots[id].SetPath(ans);
+        robots[id].setPath(ans);
     } else if (splt[0] == "it") {
         RobotsIteration();
         ticks_++;
@@ -1290,16 +1378,16 @@ void ProcessCommand(string command) {
 
 string GetMask(int x, int y) {
     string mask = "0000";
-    if (y - 1 >= 0 && !field[x][y - 1].IsNone()) {
+    if (y - 1 >= 0 && !field[x][y - 1].isNone()) {
         mask[0] = '1';
     }
-    if (x - 1 >= 0 && !field[x - 1][y].IsNone()) {
+    if (x - 1 >= 0 && !field[x - 1][y].isNone()) {
         mask[1] = '1';
     }
-    if (y + 1 < n && !field[x][y + 1].IsNone()) {
+    if (y + 1 < n && !field[x][y + 1].isNone()) {
         mask[2] = '1';
     }
-    if (x + 1 < n && !field[x + 1][y].IsNone()) {
+    if (x + 1 < n && !field[x + 1][y].isNone()) {
         mask[3] = '1';
     }
     return mask;
@@ -1309,20 +1397,20 @@ void DrawField() {
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < m; ++j) {
             Color cul = colors["road"];
-            if (field[i][j].IsNone()) {
+            if (field[i][j].isNone()) {
                 cul = colors["none"];
             }
             Color col;
-            if (field[i][j].IsRoad()) {
+            if (field[i][j].isRoad()) {
                 col = colors["road"];
             }
-            if (field[i][j].IsShelf()) {
+            if (field[i][j].isShelf()) {
                 col = colors["shelf"];
             }
-            if (field[i][j].IsDock()) {
+            if (field[i][j].isDock()) {
                 col = colors["dock"];
             }
-            if (field[i][j].IsPickUp()) {
+            if (field[i][j].isPickUp()) {
                 col = colors["pickup"];
             }
             if (selected_point.first == i && selected_point.second == j) {
@@ -1336,12 +1424,12 @@ void DrawField() {
             box_empty.setPosition(j * square_size, i * square_size);
             box_empty.setFillColor(cul);
 
-            RectangleShape box(sf::Vector2f(square_size, square_size));
+            RectangleShape box(Vector2f(square_size, square_size));
             box.setFillColor(cul);
             box.setPosition(j * square_size, i * square_size);
             window.draw(box);
-            if (!field[i][j].IsNone()) {
-                if (field[i][j].IsRoad()) {
+            if (!field[i][j].isNone()) {
+                if (field[i][j].isRoad()) {
                     string mask = GetMask(i, j);
                     if (mask != "0000") {
                         Texture tx = sprites[mask];
@@ -1354,9 +1442,13 @@ void DrawField() {
                     }
                 } else {
                     window.draw(box_empty);
-                    DrawRect(window, j * square_size + square_size / 10,
-                             i * square_size + square_size / 10,
-                             square_size / 5 * 2, col);
+                    DrawRect(
+                        window,
+                        (float)j * (float)square_size + (float)square_size / (
+                            float)10,
+                        (float)i * (float)square_size + (float)square_size / (
+                            float)10,
+                        (float)square_size / (float)5 * 2, col);
                 }
             } else {
                 window.draw(box_empty);
@@ -1367,16 +1459,70 @@ void DrawField() {
         }
     }
     for (auto r : robots) {
-        pair<int, int> pos = r.second.GetPos();
-        if (r.second.GetStatus()) {
-            CircleShape circle(square_size / 2 - 15);
+        if (!r.second.getStatus()) {
+            continue;
+        }
+        vector<node3> path = r.second.getPath();
+        int cur = r.second.getCurPath();
+        if (cur == 0) {
+            continue;
+        }
+        bool was_type = false;
+        for (int i = cur; i < path.size(); ++i) {
+            if (was_type) {
+                break;
+            }
+            int x = path[i - 1].x, y = path[i - 1].y, nx = path[i].x, ny = path[
+                    i].y;
+            if (x == nx && y == ny) {
+                continue;
+            }
+            if (path[i].type != -1) {
+                was_type = true;
+            }
+            RectangleShape line(Vector2f(square_size, 6));
+            if (x > nx) {
+                line.rotate(90);
+                line.setPosition(
+                    y * (double)square_size + (double)square_size / (double)2 +
+                    3,
+                    x * (double)square_size - (double)square_size / (double)2);
+            } else if (x < nx) {
+                line.rotate(90);
+                line.setPosition(
+                    y * (double)square_size + (double)square_size / (double)2 +
+                    3,
+                    x * (double)square_size + (double)square_size / (double)2);
+            } else if (y > ny) {
+                line.setPosition(
+                    y * square_size - (double)square_size / (double)2,
+                    x * (double)square_size + (double)square_size /
+                    (double)2 - 3);
+            } else {
+                line.setPosition(
+                    y * square_size + (double)square_size / (double)2,
+                    x * (double)square_size + (double)square_size /
+                    (double)2 - 3);
+            }
+            line.setFillColor(robot_colors[r.first % robot_colors.size()]);
+            window.draw(line);
+        }
+    }
+    for (auto r : robots) {
+        pair<int, int> pos = r.second.getPos();
+        if (r.second.getStatus()) {
+            CircleShape circle(square_size / 2 - square_size / 4);
             circle.setFillColor(robot_colors[r.first % robot_colors.size()]);
-            circle.setPosition(pos.second * square_size + 15,
-                               pos.first * square_size + 15);
+            circle.setPosition(pos.second * square_size + square_size / 4,
+                               pos.first * square_size + square_size / 4);
             window.draw(circle);
-            Type(window, pos.second * square_size + square_size / 2,
-                 pos.first * square_size + square_size / 2 - 15,
-                 to_string(r.second.getId()), Color::White, 40);
+            // Type(window,
+            //      (float)pos.second * (float)square_size + (float)square_size / (
+            //          float)2,
+            //      (float)pos.first * (float)square_size + (float)square_size / (
+            //          float)2 - 6 * (float)square_size / (float)72,
+            //      to_string(r.second.getId()), Color::White,
+            //      40 * square_size / 72);
         }
     }
 }
@@ -1404,14 +1550,14 @@ void DrawHelpWindow(int x, int y) {
     help_window.setVisible(true);
     help_window.clear(Color(46, 47, 56));
     Point p = field[x][y];
-    if (p.IsDock()) {
+    if (p.isDock()) {
         Type(help_window, 300, 30, "Dock Station", Color::White, 40);
-        Dock d = docks[p.GetDockId()];
-        pair<int, int> pos = d.GetPos();
-        int size = d.GetSize();
-        int id = d.GetId();
-        int free = d.GetFreeRobots();
-        vector<int> robots = d.GetRobotsId();
+        Dock d = docks[p.getDockId()];
+        pair<int, int> pos = d.getPos();
+        int size = d.getSize();
+        int id = d.getId();
+        int free = d.getFreeRobots();
+        vector<int> robots = d.getRobotsId();
         DrawStats(help_window, "Id: " + to_string(id), 30, 100);
         DrawStats(help_window, "Size: " + to_string(size), 30, 160);
         DrawStats(help_window, "Free: " + to_string(free), 30, 220);
@@ -1422,14 +1568,14 @@ void DrawHelpWindow(int x, int y) {
             ids += to_string(id1) + "; ";
         }
         DrawStats(help_window, "Robots: " + ids, 30, 280);
-    } else if (p.IsShelf()) {
+    } else if (p.isShelf()) {
         Type(help_window, 320, 30, "Shelf", Color::White, 40);
-        Shelf s = shelves[p.GetShelfId()];
-        pair<int, int> pos = s.GetPos();
-        int size = s.GetSize();
-        int id = s.GetId();
-        int free = s.GetFrSpace();
-        vector<int> cargos = s.GetCargos();
+        Shelf s = shelves[p.getShelfId()];
+        pair<int, int> pos = s.getPos();
+        int size = s.getSize();
+        int id = s.getId();
+        int free = s.getFrSpace();
+        vector<int> cargos = s.getCargos();
         DrawStats(help_window, "Id: " + to_string(id), 30, 100);
         DrawStats(help_window, "Size: " + to_string(size), 30, 160);
         DrawStats(help_window, "Free: " + to_string(free), 30, 220);
@@ -1440,12 +1586,12 @@ void DrawHelpWindow(int x, int y) {
             ids += to_string(id) + "; ";
         }
         DrawStats(help_window, "Cargos: " + ids, 30, 280);
-    } else if (p.IsPickUp()) {
+    } else if (p.isPickUp()) {
         Type(help_window, 320, 30, "Pickup", Color::White, 40);
-        PickUp s = pickups[p.GetPickUpId()];
-        pair<int, int> pos = s.GetPos();
-        set<int> cargos = s.GetCargos();
-        int id = s.GetId();
+        PickUp s = pickups[p.getPickUpId()];
+        pair<int, int> pos = s.getPos();
+        set<int> cargos = s.getCargos();
+        int id = s.getId();
         DrawStats(help_window, "Id: " + to_string(id), 30, 100);
         DrawStats(help_window, "X: " + to_string(pos.first), 400, 100);
         DrawStats(help_window, "Y: " + to_string(pos.second), 510, 100);
@@ -1457,7 +1603,7 @@ void DrawHelpWindow(int x, int y) {
     } else {
         int id = -1;
         for (auto r : robots) {
-            pair<int, int> pos = r.second.GetPos();
+            pair<int, int> pos = r.second.getPos();
             if (pos.first == x && pos.second == y) {
                 id = r.first;
                 break;
@@ -1471,9 +1617,9 @@ void DrawHelpWindow(int x, int y) {
         } else {
             Type(help_window, 320, 30, "Robot", Color::White, 40);
             Robot r = robots[id];
-            int cid = r.GetCargoId();
-            bool status = r.GetStatus();
-            int did = r.GetDockId();
+            int cid = r.getCargoId();
+            bool status = r.getStatus();
+            int did = r.getDockId();
             DrawStats(help_window, "Id: " + to_string(id), 30, 100);
             DrawStats(help_window, "Busy: " + to_string(status), 30, 160);
             DrawStats(help_window, "Cargo Id: " + to_string(cid), 30, 220);
@@ -1502,6 +1648,60 @@ void DrawTerminal() {
               terminal_messages[i].second, 50);
     }
     Type2(window, 1500, 1365, terminal, Color::White, 50);
+}
+
+void DrawButtons(RenderWindow& window) {
+    int cnt = 0;
+    for (button but : buttons) {
+        cnt++;
+        Color cul = Color(43, 45, 48);
+        if (cnt == current_illumination)
+            cul = Color(65, 119, 244);
+        CircleShape circle(but.height / 2);
+        circle.setPosition(but.x, but.y);
+        circle.setFillColor(cul);
+        window.draw(circle);
+
+        circle.setPosition(but.x + but.width, but.y);
+        window.draw(circle);
+
+        RectangleShape box_but1(Vector2f(but.width, but.height));
+        box_but1.setPosition(but.x + but.height / 2, but.y);
+        box_but1.setFillColor(cul);
+        window.draw(box_but1);
+        Type(window, but.x + but.height / 2 + but.width / 2,
+             but.y + but.height / 2 - 8, but.text, Color::White, but.font_size);
+    }
+}
+
+void ButtonsIllumination(RenderWindow& window) {
+    int wind_x = window.getPosition().x;
+
+    int wind_y = window.getPosition().y;
+
+    int mouse_x = Mouse::getPosition().x - 14;
+
+    int mouse_y = Mouse::getPosition().y - 60;
+
+    if (mouse_x >= wind_x and mouse_x <= wind_x + window.getSize().x and
+        mouse_y >= wind_y and mouse_y <= wind_y + window.getSize().y) {
+        int field_x = mouse_x - wind_x;
+        int field_y = mouse_y - wind_y;
+        int cnt = 0;
+        for (button but : buttons) {
+            cnt++;
+            int x1 = but.x;
+            int y1 = but.y;
+            int h = but.height;
+            int w = but.width;
+            if (field_x > x1 and field_x < x1 + w + h and field_y > y1 and
+                field_y < y1 + h) {
+                current_illumination = cnt;
+                return;
+            }
+        }
+        current_illumination = -1;
+    }
 }
 
 void TerminalKeyborad(Event& event) {
@@ -1566,6 +1766,22 @@ void MouseReaction(Event event) {
                 }
             }
         } else {
+            int x = event.mouseButton.x;
+            int y = event.mouseButton.y;
+            for (button but : buttons) {
+                int x1 = but.x;
+                int y1 = but.y;
+                int h = but.height;
+                int w = but.width;
+                if (x > x1 and x < x1 + w + h and y > y1 and y < y1 + h and
+                    event.mouseButton.button == Mouse::Left) {
+                    if (but.action == 1) {
+                        LoadField();
+                    } else if (but.action == 2) {
+                        SaveField();
+                    }
+                }
+            }
             is_terminal_selected = true;
         }
     }
@@ -1575,22 +1791,22 @@ void KeyboardReaction(Event& event) {
     if (CanPressButton(event.key.code)) {
         if (selected_point.first != -1) {
             if (event.key.code == 114) {
-                field[selected_point.first][selected_point.second].BecomeRoad();
+                field[selected_point.first][selected_point.second].becomeRoad();
             }
             if (event.key.code == 100) {
                 field[selected_point.first][selected_point.second].
-                    BecomeDock(1);
+                    becomeDock(1);
             }
             if (event.key.code == 110) {
-                field[selected_point.first][selected_point.second].BecomeNone();
+                field[selected_point.first][selected_point.second].becomeNone();
             }
             if (event.key.code == 115) {
                 field[selected_point.first][selected_point.second].
-                    BecomeShelf(1);
+                    becomeShelf(1);
             }
             if (event.key.code == 112) {
                 field[selected_point.first][selected_point.second].
-                    BecomePickUp();
+                    becomePickUp();
             }
             selected_point = {-1, -1};
         }
@@ -1617,10 +1833,11 @@ void Main() {
     field.resize(n, vector<Point>(m));
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < m; ++j) {
-            field[i][j].Create(i, j);
+            field[i][j].create(i, j);
         }
     }
     LoadSprites();
+    CreateButtons();
     help_window.setVisible(false);
     int prev = GetEpochTime();
     while (window.isOpen()) {
@@ -1634,6 +1851,8 @@ void Main() {
             }
         }
         window.clear(Color(12, 12, 12));
+        DrawButtons(window);
+        ButtonsIllumination(window);
         Event event;
         while (window.pollEvent(event) and window.hasFocus()) {
             if (event.type == Event::Closed) {
