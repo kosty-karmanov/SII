@@ -1,22 +1,16 @@
 #include <SFML/Graphics.hpp>
-#include <utility>
 #include <bits/stdc++.h>
 #include <windows.h>
-
-#define Walter Color
+#include <utility>
 
 using namespace std;
 using namespace sf;
 
 struct node {
-    int x, y, px, py, time;
-};
-
-struct node2 {
     int x, y, tm;
 };
 
-struct node3 {
+struct path_point {
     int x, y, type, id;
 };
 
@@ -24,13 +18,6 @@ struct order {
     bool type, taken;
     int cargo_id, punkt_id, shelf_id;
 };
-
-int n = 40, m = 40, seconds_ = 0, ticks_ = 0;
-const int N = 1e3;
-vector<vector<vector<int>>> banned_time(
-    n, vector<vector<int>>(m, vector<int>(N, -1)));
-bool simulation_working = false;
-deque<order> orders;
 
 struct button {
     string text;
@@ -48,6 +35,11 @@ struct button {
     }
 };
 
+int n = 40, m = 40, seconds_ = 0, ticks_ = 0, N = 1e3;
+vector<vector<vector<int>>> banned_time(
+    n, vector<vector<int>>(m, vector<int>(N, -1)));
+bool simulation_working = false;
+deque<order> orders;
 vector<button> buttons;
 
 
@@ -57,7 +49,7 @@ vector<pair<int, int>> bfs(vector<vector<int>>& a, int x1, int y1, int x2,
         n, vector<vector<bool>>(m, vector<bool>(N, false)));
     vector<vector<vector<pair<int, int>>>> p(
         n, vector<vector<pair<int, int>>>(m, vector<pair<int, int>>(N)));
-    deque<node2> d;
+    deque<node> d;
     dp[x1][y1][time_start] = true;
     vector<pair<int, int>> move = {{0, 0},
                                    {-1, 0},
@@ -117,7 +109,7 @@ vector<pair<int, int>> bfs(vector<vector<int>>& a, int x1, int y1, int x2,
         time_st--;
     }
     put.emplace_back(x2, y2);
-    std::reverse(put.begin(), put.end());
+    reverse(put.begin(), put.end());
     return put;
 }
 
@@ -125,7 +117,7 @@ pair<int, int> FindNearest(vector<vector<int>>& a, int x1, int y1, int n, int m,
                            int time_start, int type, int id) {
     vector<vector<vector<bool>>> dp(
         n, vector<vector<bool>>(m, vector<bool>(N, false)));
-    deque<node2> d;
+    deque<node> d;
     dp[x1][y1][time_start] = true;
     vector<pair<int, int>> move = {{-1, 0},
                                    {1, 0},
@@ -183,8 +175,8 @@ vector<Color> robot_colors = {Color(219, 68, 64), Color(248, 222, 84),
                               Color(232, 4, 127), Color(60, 15, 240)};
 
 int GetEpochTime() {
-    const auto p1 = std::chrono::system_clock::now();
-    return chrono::duration_cast<std::chrono::seconds>(
+    const auto p1 = chrono::system_clock::now();
+    return chrono::duration_cast<chrono::seconds>(
         p1.time_since_epoch()).count();
 }
 
@@ -372,7 +364,7 @@ private:
     int x_{}, y_{}, id_ = 0, dock_id_ = 0, cur_path_ = 0, cargo_id_ = -1,
         order_id_ = 0, task_ = -1;
     bool busy_ = false;
-    vector<node3> path_;
+    vector<path_point> path_;
 
 public:
     Robot() = default;
@@ -404,11 +396,10 @@ public:
         return cur_path_;
     }
 
-    void setPath(vector<node3> path) {
+    void setPath(vector<path_point> path) {
         path_ = path;
         busy_ = true;
         cur_path_ = 0;
-        // cout<<id_<<" received new path!\n"<<path_.size()<<"\n";
     }
 
     int getCargoId() const {
@@ -429,7 +420,7 @@ public:
         return busy_;
     }
 
-    vector<node3> getPath() {
+    vector<path_point> getPath() {
         return path_;
     }
 
@@ -449,26 +440,7 @@ public:
         task_ = val;
     }
 
-    void Goto(vector<vector<int>>& a, int x, int y, int n, int m) {
-        // tx_ = x;
-        // ty_ = y;
-        // path_ = bfs(a, x_, y_, tx_, ty_, n, m, ticks_);
-        // if (path_.empty()) {
-        //     return;
-        // }
-        // busy_ = true;
-        // int cur_ticks = ticks_;
-        // for (auto i : path_) {
-        //     banned_time[i.first][i.second][cur_ticks++] = id_ + 1;
-        // }
-        cout << "Calculation...\n";
-        cur_path_ = 0;
-    }
-
     void iteration() {
-        // if (id_ == 4) {
-        //     cout<<task_<<" " << path_.size() <<" " <<busy_<<"\n";
-        // }
         if (busy_ && !path_.empty()) {
             if (cur_path_ >= path_.size()) {
                 busy_ = false;
@@ -480,15 +452,12 @@ public:
                 cargo_id_ = orders[order_id_].cargo_id;
                 task_ = 2;
             }
-
             if (task_ == 2 && path_[cur_path_].type == 3) {
-                // cout<<id_<<" finished task!" <<"\n";
                 shelves[path_[cur_path_].id].pushCargo(cargo_id_);
                 cargo_id_ = -1;
                 task_ = -1;
                 busy_ = false;
             }
-
             if (task_ == 3 && (path_[cur_path_].type == 3 || path_[cur_path_].
                                type == 5)) {
                 shelves[path_[cur_path_].id].popCargo(
@@ -497,14 +466,12 @@ public:
                 cargo_id_ = orders[order_id_].cargo_id;
                 task_ = 4;
             }
-
             if (task_ == 4 && path_[cur_path_].type == 4) {
                 pickups[path_[cur_path_].id].addCargo(cargo_id_);
                 cargo_id_ = -1;
                 task_ = -1;
                 busy_ = false;
             }
-
             x_ = path_[cur_path_].x;
             y_ = path_[cur_path_].y;
             cur_path_++;
@@ -843,8 +810,8 @@ vector<vector<int>> RebuildMatrix() {
     return ans;
 }
 
-vector<node3> GetFullPath(int robot_id, int pickup_id, int shelf_id) {
-    vector<node3> ans;
+vector<path_point> GetFullPath(int robot_id, int pickup_id, int shelf_id) {
+    vector<path_point> ans;
     vector<vector<int>> a = RebuildMatrix();
     Robot r = robots[robot_id];
     pair<int, int> robot_pos = r.getPos();
@@ -926,83 +893,6 @@ vector<int> Get4Near(int x, int y) {
     return ans;
 }
 
-int GetNearestRobot(int x, int y) {
-    int mn = 1e9;
-    int id = -1;
-    vector<pair<int, int>> path;
-    for (auto r : robots) {
-        if (!r.second.getStatus()) {
-            int start = Pos2Num(r.second.getPos().first,
-                                r.second.getPos().second);
-            deque<pair<int, int>> dq;
-            vector<bool> used(n * m);
-            vector<int> p(n * m);
-            p[start] = -1;
-            vector<int> poss = Get4Near(r.second.getPos().first,
-                                        r.second.getPos().second);
-            for (int& pos : poss) {
-                dq.emplace_back(pos, 0);
-                p[pos] = start;
-                used[pos] = true;
-            }
-            int cur_ans = -1;
-            while (!dq.empty()) {
-                pair<int, int> cur = dq.front();
-                dq.pop_front();
-                if (Pos2Num(x, y) == cur.first) {
-                    cur_ans = cur.second;
-                    break;
-                }
-                for (int v : graph[cur.first]) {
-                    if (!used[v]) {
-                        used[v] = true;
-                        p[v] = cur.first;
-                        dq.push_back({v, cur.second + 1});
-                    }
-                }
-            }
-            if (cur_ans < mn && cur_ans != -1) {
-                id = r.first;
-                mn = cur_ans;
-                vector<pair<int, int>> cur_path;
-                int cur = Pos2Num(x, y);
-                while (cur != -1) {
-                    cur_path.push_back(Num2Pos(cur));
-                    cur = p[cur];
-                }
-                reverse(cur_path.begin(), cur_path.end());
-                path = cur_path;
-            }
-        }
-    }
-    return id;
-}
-
-
-int GetNearestRobotV2(int x, int y) {
-    int ans = 1e9, id = -1;
-    vector<vector<int>> a = RebuildMatrix();
-    for (auto r : robots) {
-        if (r.second.getStatus()) {
-            continue;
-        }
-        pair<int, int> pos = r.second.getPos();
-        int ln = bfs(a, pos.first, pos.second, x, y, n, m, ticks_, r.first + 1).
-            size();
-        if (ln == 0) {
-            continue;
-        }
-        if (ln < ans) {
-            ans = ln;
-            id = r.first;
-        }
-    }
-    if (id != -1) {
-        robots[id].Goto(a, x, y, n, m);
-    }
-    return id;
-}
-
 int GetNearestRobotV3(bool type, int pickup_id, int shelf_id) {
     int mn = 1e9;
     int id = -1;
@@ -1033,7 +923,7 @@ void RobotsIteration() {
                                    order_.shelf_id);
         if (id != -1) {
             order_.taken = true;
-            vector<node3> path =
+            vector<path_point> path =
                 GetFullPath(id, order_.punkt_id, order_.shelf_id);
             robots[id].setPath(path);
             robots[id].setOrderId(cnt);
@@ -1080,7 +970,7 @@ void RobotsIteration() {
             }
             r.second.setTask(-1);
             int cur_ticks = ticks_;
-            vector<node3> ans;
+            vector<path_point> ans;
             for (auto elem : path) {
                 ans.push_back({elem.first, elem.second,
                                a[elem.first][elem.second]});
@@ -1360,7 +1250,7 @@ void ProcessCommand(string command) {
         vector<vector<int>> a = RebuildMatrix();
         vector<pair<int, int>> path = bfs(a, pos.first, pos.second, x, y, n, m,
                                           ticks_, id + 1);
-        vector<node3> ans;
+        vector<path_point> ans;
         int cur_ticks = ticks_;
         for (auto elem : path) {
             ans.push_back({elem.first, elem.second,
@@ -1462,7 +1352,7 @@ void DrawField() {
         if (!r.second.getStatus()) {
             continue;
         }
-        vector<node3> path = r.second.getPath();
+        vector<path_point> path = r.second.getPath();
         int cur = r.second.getCurPath();
         if (cur == 0) {
             continue;
@@ -1637,7 +1527,7 @@ void DrawTerminal() {
         int sz = GetTextSize(terminal, 50).second;
         RectangleShape box(Vector2f(3, 50));
         box.setPosition(1500 + sz, 1373);
-        box.setFillColor(Walter::White);
+        box.setFillColor(Color::White);
         window.draw(box);
     }
     for (int i = 0; i < min((int)terminal_messages.size(), (int)15); ++i) {
@@ -1813,15 +1703,7 @@ void KeyboardReaction(Event& event) {
     }
 }
 
-void UpdateRobots() {
-    while (true) {
-        cout << 1;
-        Sleep(1000);
-    }
-}
-
-void Main() {
-    // n и m до 100
+int main() {
     /*
         * R - поставить дорогу
         * D - поставить док станцию
@@ -1890,12 +1772,4 @@ void Main() {
         DrawTerminal();
         window.display();
     }
-}
-
-int main() {
-    Main();
-    // thread tA(Main);
-    // thread tB(UpdateRobots);
-    // tA.join();
-    // tB.join();
 }
